@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- Intentionally empty. This stops the Directory.Build.props walk so the test project under
+       tests\ does NOT import the shared build props of mods\, which add the game references.
+       Those assemblies need the running game and cannot load in a test host. The tests link
+       only HighlightLogic.cs, which has no game dependencies. -->
+
+</Project>
