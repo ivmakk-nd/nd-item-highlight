@@ -9,6 +9,7 @@ All notable changes to this mod are documented in this file. The format is based
 - The outlines fade out over 3 seconds after you release the key, and they keep updating while they fade. The `FadeDelay` setting takes 0 to 60 seconds, and 0 turns the outlines off at once.
 - The `OutlineColor` setting takes a hex color for the outlines while you hold the key and during the fade. The default is white.
 - The `OutlineWidth` setting takes the thickness of the outlines, from 1 to 8.
+- The item or door under your crosshair keeps the game's normal outline while you hold the key and during the fade. An item takes your color and thickness again when you look away.
 
 ### Changed
 

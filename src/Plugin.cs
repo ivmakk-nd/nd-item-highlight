@@ -46,9 +46,9 @@ namespace ItemHighlight
                 "and new items take longer to get the outline.",
                 new AcceptableValueRange<float>(1f, 10f)));
             OutlineColor = Config.Bind("General", "OutlineColor", DefaultOutlineColor,
-                "The color of the outlines while you hold the key and during the fade, as a hex color: #RRGGBB. The # is optional. Without the key, the game's hover outline keeps its own color.");
+                "The color of the outlines while you hold the key and during the fade, as a hex color: #RRGGBB. The # is optional. Colors to try: #7CFF4F, #00D8FF. The item or door under the crosshair always keeps the game's own outline.");
             OutlineWidth = Config.Bind("General", "OutlineWidth", 2f, new ConfigDescription(
-                "The thickness of the outlines while you hold the key. The fade thins them from this value. The game's own outline is 4.6. Without the key, the game's hover outline keeps its own thickness.",
+                "The thickness of the outlines while you hold the key. The fade thins them from this value. The game's own outline is 4.6. The item or door under the crosshair always keeps the game's own thickness.",
                 new AcceptableValueRange<float>(1f, 8f)));
             FadeDelay = Config.Bind("General", "FadeDelay", 3f, new ConfigDescription(
                 "How long, in seconds, the outlines take to fade after you release the key. The fade starts at the release. At 0 the outlines go off at once.",
@@ -116,6 +116,8 @@ namespace ItemHighlight
             Require(AccessTools.Method(typeof(Interactable), nameof(Interactable.DisableOutline)), "Interactable.DisableOutline");
             Require(AccessTools.Method(typeof(Interactable), "OnHovered"), "Interactable.OnHovered");
             Require(AccessTools.Method(typeof(Interactable), "OnUnhovered"), "Interactable.OnUnhovered");
+            Require(AccessTools.Method(typeof(StaticInteractable), nameof(StaticInteractable.OnHovered)), "StaticInteractable.OnHovered");
+            Require(AccessTools.Method(typeof(StaticInteractable), nameof(StaticInteractable.OnUnhovered)), "StaticInteractable.OnUnhovered");
             Require(AccessTools.PropertyGetter(typeof(Interactable), nameof(Interactable.IsVehicleColliderIsolated)), "Interactable.IsVehicleColliderIsolated");
             Require(AccessTools.PropertyGetter(typeof(Interactable), nameof(Interactable.AvailableForInteraction)), "Interactable.AvailableForInteraction");
             Require(AccessTools.PropertyGetter(typeof(HeldItem), nameof(HeldItem.IsEquipped)), "HeldItem.IsEquipped");

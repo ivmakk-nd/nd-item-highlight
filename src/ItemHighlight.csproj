@@ -11,6 +11,8 @@
     <Reference Include="$(GameManaged)\Mirror.dll"><Private>false</Private></Reference>
     <Reference Include="$(GameManaged)\Unity.RenderPipelines.HighDefinition.Runtime.dll"><Private>false</Private></Reference>
     <Reference Include="$(GameManaged)\Unity.RenderPipelines.Core.Runtime.dll"><Private>false</Private></Reference>
+    <!-- The stripped module of the game has no Physics.IgnoreLayerCollision. The BepInEx pack puts this folder first in the search path. -->
+    <Reference Include="$(GameDir)\unstripped_libs\UnityEngine.PhysicsModule.dll"><Private>false</Private></Reference>
   </ItemGroup>
 
 </Project>

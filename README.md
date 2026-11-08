@@ -10,7 +10,7 @@ Small items are easy to miss in tall grass, in houses, and around wrecks, and th
 - **Your car stays quiet**: items in or on a car you can drive and the parts installed on it get no outline. Items in wrecks and loose car parts do.
 - **Only what you can take**: items in your hands, in your hotbar, or in another player's hands get no outline.
 - **Tap and keep playing**: the fade starts when you release the key, so a short tap is enough. The outlines keep updating while they fade.
-- **Your color and thickness**: set any hex color and how thick the outlines are. They apply only while you hold the key and during the fade. At other times the game's hover outline looks as usual.
+- **Your color and thickness**: set any hex color and how thick the outlines are. They apply only while you hold the key and during the fade. The item or door under your crosshair always keeps the game's normal outline, and an item takes your look again when you look away.
 - **Settings**: change the key, the radius (up to 100 m), the color, the thickness, and the fade time (0 to 60 s, 0 turns the outlines off at once).
 
 ## Multiplayer

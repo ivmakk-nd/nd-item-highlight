@@ -28,6 +28,13 @@ namespace ItemHighlight
         // The item under the crosshair, kept by the hover patches. Its outline belongs to the game's hover.
         internal static Interactable Hovered;
 
+        // A door or another fixed object under the crosshair. It has no base class in common with Interactable.
+        internal static StaticInteractable HoveredStatic;
+
+        // The hover target on the free layer while the item highlight shows, and the renderers that were moved there.
+        private static Component _gameLook;
+        private static Renderer[] _gameLookRenderers;
+
         // An outlined item that the crosshair just left. AttachableObject.OnUnhovered calls DisableOutline after the base
         // method, so the outline comes back at the next Tick, not in the postfix of the base.
         private static HeldItem _reoutline;
@@ -97,6 +104,105 @@ namespace ItemHighlight
                 Plugin.Log.LogDebug("ItemHighlight: fade start");
             }
             _wasFading = Gate.IsFading;
+            if (IsShowing)
+            {
+                UpdateGameLook();
+            }
+        }
+
+        private static void UpdateGameLook()
+        {
+            Component target = OutlineStyle.CanDraw(_camera) ? HoverTarget() : null;
+            // A destroyed object compares equal to a null target, but its pass and its renderers still need the end.
+            bool destroyed = (object)_gameLook != null && _gameLook == null;
+            if (target == _gameLook && !destroyed)
+            {
+                return;
+            }
+            EndGameLook();
+            if (target != null)
+            {
+                StartGameLook(target);
+            }
+        }
+
+        // A destroyed or disabled hover target gives C# null here. InteractionManager skips the unhover of a destroyed object,
+        // and OnDisable of the game removes the unhover listener, so the fields can keep such an object.
+        private static Component HoverTarget()
+        {
+            if (Hovered != null && Hovered.isActiveAndEnabled)
+            {
+                return Hovered;
+            }
+            if (HoveredStatic != null && HoveredStatic.isActiveAndEnabled)
+            {
+                return HoveredStatic;
+            }
+            return null;
+        }
+
+        private static void StartGameLook(Component target)
+        {
+            int selection = LayerMask.NameToLayer("Selection");
+            // The same list as the protected GetRenderers of the game.
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>();
+            bool moved = false;
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer.gameObject.layer == selection)
+                {
+                    renderer.gameObject.layer = OutlineStyle.HoverLayer;
+                    moved = true;
+                }
+            }
+            _gameLook = target;
+            _gameLookRenderers = renderers;
+            // A trigger zone or a slot can have no outlined renderer, and then the pass would draw nothing.
+            OutlineStyle.SetHoverPass(moved);
+            if (Plugin.Verbose.Value)
+            {
+                Plugin.Log.LogDebug($"ItemHighlight: game look start on {target.name} ({target.GetType().Name}), {renderers.Length} renderers");
+            }
+        }
+
+        // The stored renderers also cover children that left the object during the look. The other outlines come back
+        // afterwards, because the items stacked below the object share its renderers.
+        private static void EndGameLook()
+        {
+            if ((object)_gameLook == null)
+            {
+                return;
+            }
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            Component ended = _gameLook;
+            Renderer[] renderers = _gameLookRenderers;
+            _gameLook = null;
+            _gameLookRenderers = null;
+            OutlineStyle.SetHoverPass(false);
+            int defaultLayer = LayerMask.NameToLayer("Default");
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer != null && renderer.gameObject.layer == OutlineStyle.HoverLayer)
+                {
+                    renderer.gameObject.layer = defaultLayer;
+                }
+            }
+            if (IsShowing)
+            {
+                foreach (HeldItem item in _outlined)
+                {
+                    if (item != null)
+                    {
+                        item.EnableOutline();
+                    }
+                }
+            }
+            RestoreHover();
+            if (Plugin.Verbose.Value)
+            {
+                string name = ended == null ? "a destroyed object" : ended.name;
+                Plugin.Log.LogDebug($"ItemHighlight: game look end on {name} in {Ms(System.Diagnostics.Stopwatch.GetTimestamp() - start):F3} ms");
+            }
         }
 
         // The main key and its own modifiers. Other held keys (Shift to sprint) do not matter.
@@ -252,6 +358,8 @@ namespace ItemHighlight
             _reoutline = null;
             try
             {
+                // First, so the hover target is on the game's layer before OutlineStyle.End.
+                EndGameLook();
                 Disable(_outlined);
                 Disable(ToEnable);
                 RestoreHover();
@@ -280,9 +388,9 @@ namespace ItemHighlight
         // A DisableOutline of an item under the hovered one also clears the hovered item's renderers.
         private static void RestoreHover()
         {
-            if (Hovered != null)
+            if (HoverTarget() is IInteractable target)
             {
-                Hovered.EnableOutline();
+                target.EnableOutline();
             }
         }
 
@@ -345,6 +453,42 @@ namespace ItemHighlight
             catch (Exception e)
             {
                 Plugin.WarnOnce(nameof(HighlightOnUnhovered), e);
+            }
+        }
+    }
+
+    // The overrides of the subclasses call the base, so these postfixes fire for each fixed object.
+    [HarmonyPatch(typeof(StaticInteractable), "OnHovered")]
+    internal static class HighlightOnHoveredStatic
+    {
+        private static void Postfix(StaticInteractable __instance)
+        {
+            try
+            {
+                Highlighter.HoveredStatic = __instance;
+            }
+            catch (Exception e)
+            {
+                Plugin.WarnOnce(nameof(HighlightOnHoveredStatic), e);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(StaticInteractable), "OnUnhovered")]
+    internal static class HighlightOnUnhoveredStatic
+    {
+        private static void Postfix(StaticInteractable __instance)
+        {
+            try
+            {
+                if (Highlighter.HoveredStatic == __instance)
+                {
+                    Highlighter.HoveredStatic = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.WarnOnce(nameof(HighlightOnUnhoveredStatic), e);
             }
         }
     }
