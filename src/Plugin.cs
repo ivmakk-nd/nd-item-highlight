@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace ItemHighlight
 {
-    [BepInPlugin(PluginGuid, "Item Highlight", "1.0.0")]
+    [BepInPlugin(PluginGuid, "Item Highlight", "1.1.0")]
     [BepInProcess("Nomad Drive.exe")]
     public sealed class Plugin : BaseUnityPlugin
     {

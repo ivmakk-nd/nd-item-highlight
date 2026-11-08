@@ -4,6 +4,8 @@ All notable changes to this mod are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-08
+
 ### Added
 
 - The outlines fade out over 3 seconds after you release the key, and they keep updating while they fade. The `FadeDelay` setting takes 0 to 60 seconds, and 0 turns the outlines off at once.
@@ -24,5 +26,6 @@ All notable changes to this mod are documented in this file. The format is based
 - No outline for items in your hands, in your hotbar, in another player's hands, or in the air after a throw.
 - Settings for the key, the radius, and how often the mod looks for new items.
 
-[Unreleased]: https://github.com/ivmakk-nd/nd-item-highlight/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/ivmakk-nd/nd-item-highlight/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ivmakk-nd/nd-item-highlight/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ivmakk-nd/nd-item-highlight/releases/tag/v1.0.0
