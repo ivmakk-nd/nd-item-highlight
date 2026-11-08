@@ -1,0 +1,6 @@
+v1.1.0 - 2026-11-08
+Added: The outlines fade out over 3 seconds after you release the key, so a short tap is enough. The FadeDelay setting takes 0 to 60 seconds, and 0 turns the outlines off at once.
+Added: The OutlineColor setting takes a hex color for the outlines. The default is white.
+Added: The OutlineWidth setting takes the thickness of the outlines, from 1 to 8.
+Added: The item or door under your crosshair keeps the game's normal outline while you hold the key and during the fade.
+Changed: The outlines are thinner by default: 2, where the game's own outline is 4.6. Set OutlineWidth to 4.6 for the old look.

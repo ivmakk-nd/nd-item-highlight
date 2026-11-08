@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ItemHighlight
 {
-    // Outlines the pickup items near the camera while the highlight key is held, with the game's hover outline.
+    // Outlines the pickup items near the camera while the highlight key is held and during the fade after it, with the game's hover outline.
     internal static class Highlighter
     {
         private static readonly KeyGate Gate = new KeyGate();
@@ -28,11 +28,23 @@ namespace ItemHighlight
         // The item under the crosshair, kept by the hover patches. Its outline belongs to the game's hover.
         internal static Interactable Hovered;
 
+        // A door or another fixed object under the crosshair. It has no base class in common with Interactable.
+        internal static StaticInteractable HoveredStatic;
+
+        // The hover target on the free layer while the item highlight shows, and the renderers that were moved there.
+        private static Component _gameLook;
+        private static Renderer[] _gameLookRenderers;
+
         // An outlined item that the crosshair just left. AttachableObject.OnUnhovered calls DisableOutline after the base
         // method, so the outline comes back at the next Tick, not in the postfix of the base.
         private static HeldItem _reoutline;
 
-        internal static bool IsHeld { get; private set; }
+        // The last strength written to the outline materials.
+        private static float _strength = 1f;
+        private static bool _wasFading;
+
+        // True while the key is held and during the fade after it.
+        internal static bool IsShowing { get; private set; }
 
         internal static void CacheKey(KeyboardShortcut shortcut)
         {
@@ -49,23 +61,147 @@ namespace ItemHighlight
                 Reoutline(item);
             }
             Gate.FullSearchInterval = Plugin.SearchInterval.Value;
-            switch (Gate.Tick(KeyHeld(), Application.isFocused, Cursor.lockState == CursorLockMode.Locked, Time.unscaledTime))
+            // Without the materials there is no fade, so the outlines go off at the release.
+            if (IsShowing)
+            {
+                Gate.FadeDelay = OutlineStyle.HasMaterials ? Plugin.FadeDelay.Value : 0f;
+            }
+            GateAction action = Gate.Tick(KeyHeld(), Application.isFocused, Cursor.lockState == CursorLockMode.Locked, Time.unscaledTime);
+            switch (action)
             {
                 case GateAction.Refresh:
-                    if (!IsHeld && Plugin.Verbose.Value)
+                    if (!IsShowing)
                     {
-                        Plugin.Log.LogDebug("ItemHighlight: key down");
+                        if (Plugin.Verbose.Value)
+                        {
+                            Plugin.Log.LogDebug("ItemHighlight: key down");
+                        }
+                        OutlineStyle.Begin();
                     }
-                    IsHeld = true;
+                    IsShowing = true;
                     Refresh(Gate.FullSearch);
+                    if (Gate.IsFading && Plugin.Verbose.Value)
+                    {
+                        Plugin.Log.LogDebug($"ItemHighlight: fade strength {Gate.Strength:F2}");
+                    }
                     break;
                 case GateAction.Release:
                     ReleaseAll();
                     if (Plugin.Verbose.Value)
                     {
-                        Plugin.Log.LogDebug("ItemHighlight: key up");
+                        Plugin.Log.LogDebug(_wasFading ? "ItemHighlight: fade end" : "ItemHighlight: key up");
                     }
                     break;
+            }
+            // Skipped on the Release tick, so OutlineStyle.End stays the last material write of an item highlight.
+            if (action != GateAction.Release && IsShowing && Gate.Strength != _strength)
+            {
+                _strength = Gate.Strength;
+                OutlineStyle.SetStrength(_strength);
+            }
+            if (Gate.IsFading && !_wasFading && Plugin.Verbose.Value)
+            {
+                Plugin.Log.LogDebug("ItemHighlight: fade start");
+            }
+            _wasFading = Gate.IsFading;
+            if (IsShowing)
+            {
+                UpdateGameLook();
+            }
+        }
+
+        private static void UpdateGameLook()
+        {
+            Component target = OutlineStyle.CanDraw(_camera) ? HoverTarget() : null;
+            // A destroyed object compares equal to a null target, but its pass and its renderers still need the end.
+            bool destroyed = (object)_gameLook != null && _gameLook == null;
+            if (target == _gameLook && !destroyed)
+            {
+                return;
+            }
+            EndGameLook();
+            if (target != null)
+            {
+                StartGameLook(target);
+            }
+        }
+
+        // A destroyed or disabled hover target gives C# null here. InteractionManager skips the unhover of a destroyed object,
+        // and OnDisable of the game removes the unhover listener, so the fields can keep such an object.
+        private static Component HoverTarget()
+        {
+            if (Hovered != null && Hovered.isActiveAndEnabled)
+            {
+                return Hovered;
+            }
+            if (HoveredStatic != null && HoveredStatic.isActiveAndEnabled)
+            {
+                return HoveredStatic;
+            }
+            return null;
+        }
+
+        private static void StartGameLook(Component target)
+        {
+            int selection = LayerMask.NameToLayer("Selection");
+            // The same list as the protected GetRenderers of the game.
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>();
+            bool moved = false;
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer.gameObject.layer == selection)
+                {
+                    renderer.gameObject.layer = OutlineStyle.HoverLayer;
+                    moved = true;
+                }
+            }
+            _gameLook = target;
+            _gameLookRenderers = renderers;
+            // A trigger zone or a slot can have no outlined renderer, and then the pass would draw nothing.
+            OutlineStyle.SetHoverPass(moved);
+            if (Plugin.Verbose.Value)
+            {
+                Plugin.Log.LogDebug($"ItemHighlight: game look start on {target.name} ({target.GetType().Name}), {renderers.Length} renderers");
+            }
+        }
+
+        // The stored renderers also cover children that left the object during the look. The other outlines come back
+        // afterwards, because the items stacked below the object share its renderers.
+        private static void EndGameLook()
+        {
+            if ((object)_gameLook == null)
+            {
+                return;
+            }
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            Component ended = _gameLook;
+            Renderer[] renderers = _gameLookRenderers;
+            _gameLook = null;
+            _gameLookRenderers = null;
+            OutlineStyle.SetHoverPass(false);
+            int defaultLayer = LayerMask.NameToLayer("Default");
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer != null && renderer.gameObject.layer == OutlineStyle.HoverLayer)
+                {
+                    renderer.gameObject.layer = defaultLayer;
+                }
+            }
+            if (IsShowing)
+            {
+                foreach (HeldItem item in _outlined)
+                {
+                    if (item != null)
+                    {
+                        item.EnableOutline();
+                    }
+                }
+            }
+            RestoreHover();
+            if (Plugin.Verbose.Value)
+            {
+                string name = ended == null ? "a destroyed object" : ended.name;
+                Plugin.Log.LogDebug($"ItemHighlight: game look end on {name} in {Ms(System.Diagnostics.Stopwatch.GetTimestamp() - start):F3} ms");
             }
         }
 
@@ -217,10 +353,13 @@ namespace ItemHighlight
         // ToEnable holds items only when a refresh threw before it stored them in the set.
         internal static void ReleaseAll()
         {
-            IsHeld = false;
+            IsShowing = false;
+            _strength = 1f;
             _reoutline = null;
             try
             {
+                // First, so the hover target is on the game's layer before OutlineStyle.End.
+                EndGameLook();
                 Disable(_outlined);
                 Disable(ToEnable);
                 RestoreHover();
@@ -231,6 +370,7 @@ namespace ItemHighlight
                 ToEnable.Clear();
                 ToDisable.Clear();
                 _found = Array.Empty<HeldItem>();
+                OutlineStyle.End();
             }
         }
 
@@ -248,16 +388,16 @@ namespace ItemHighlight
         // A DisableOutline of an item under the hovered one also clears the hovered item's renderers.
         private static void RestoreHover()
         {
-            if (Hovered != null)
+            if (HoverTarget() is IInteractable target)
             {
-                Hovered.EnableOutline();
+                target.EnableOutline();
             }
         }
 
-        // The game's unhover removes any outline of the item. While the key is held, an item that still qualifies gets it back.
+        // The game's unhover removes any outline of the item. While the item highlight shows, an item that still qualifies gets it back.
         internal static void OnUnhovered(Interactable interactable)
         {
-            if (IsHeld && interactable is HeldItem item && _outlined.Contains(item))
+            if (IsShowing && interactable is HeldItem item && _outlined.Contains(item))
             {
                 _reoutline = item;
             }
@@ -265,7 +405,7 @@ namespace ItemHighlight
 
         private static void Reoutline(HeldItem item)
         {
-            if (!IsHeld || item == Hovered || !_outlined.Contains(item) || _camera == null)
+            if (!IsShowing || item == Hovered || !_outlined.Contains(item) || _camera == null)
             {
                 return;
             }
@@ -313,6 +453,42 @@ namespace ItemHighlight
             catch (Exception e)
             {
                 Plugin.WarnOnce(nameof(HighlightOnUnhovered), e);
+            }
+        }
+    }
+
+    // The overrides of the subclasses call the base, so these postfixes fire for each fixed object.
+    [HarmonyPatch(typeof(StaticInteractable), "OnHovered")]
+    internal static class HighlightOnHoveredStatic
+    {
+        private static void Postfix(StaticInteractable __instance)
+        {
+            try
+            {
+                Highlighter.HoveredStatic = __instance;
+            }
+            catch (Exception e)
+            {
+                Plugin.WarnOnce(nameof(HighlightOnHoveredStatic), e);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(StaticInteractable), "OnUnhovered")]
+    internal static class HighlightOnUnhoveredStatic
+    {
+        private static void Postfix(StaticInteractable __instance)
+        {
+            try
+            {
+                if (Highlighter.HoveredStatic == __instance)
+                {
+                    Highlighter.HoveredStatic = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.WarnOnce(nameof(HighlightOnUnhoveredStatic), e);
             }
         }
     }
