@@ -22,7 +22,12 @@ namespace ItemHighlight
         internal static ConfigEntry<KeyboardShortcut> HighlightKey;
         internal static ConfigEntry<float> Radius;
         internal static ConfigEntry<float> SearchInterval;
+        internal static ConfigEntry<string> OutlineColor;
+        internal static ConfigEntry<float> OutlineWidth;
+        internal static ConfigEntry<float> FadeDelay;
         internal static ConfigEntry<bool> Verbose;
+
+        internal const string DefaultOutlineColor = "#FFFFFF";
 
         private static readonly HashSet<string> WarnedParts = new HashSet<string>();
         private static bool _active;
@@ -36,10 +41,18 @@ namespace ItemHighlight
                 "How far from you, in meters, items get the outline.",
                 new AcceptableValueRange<float>(5f, 100f)));
             SearchInterval = Config.Bind("General", "SearchInterval", 2f, new ConfigDescription(
-                "While you hold the key, how often, in seconds, the mod looks for items that are new in the world (loot that loads in while you drive, " +
+                "While you hold the key and during the fade, how often, in seconds, the mod looks for items that are new in the world (loot that loads in while you drive, " +
                 "an item another player drops). Items it already found react within half a second. A higher value costs less CPU, " +
                 "and new items take longer to get the outline.",
                 new AcceptableValueRange<float>(1f, 10f)));
+            OutlineColor = Config.Bind("General", "OutlineColor", DefaultOutlineColor,
+                "The color of the outlines while you hold the key and during the fade, as a hex color: #RRGGBB. The # is optional. Without the key, the game's hover outline keeps its own color.");
+            OutlineWidth = Config.Bind("General", "OutlineWidth", 2f, new ConfigDescription(
+                "The thickness of the outlines while you hold the key. The fade thins them from this value. The game's own outline is 4.6. Without the key, the game's hover outline keeps its own thickness.",
+                new AcceptableValueRange<float>(1f, 8f)));
+            FadeDelay = Config.Bind("General", "FadeDelay", 3f, new ConfigDescription(
+                "How long, in seconds, the outlines take to fade after you release the key. The fade starts at the release. At 0 the outlines go off at once.",
+                new AcceptableValueRange<float>(0f, 60f)));
             Verbose = Config.Bind("General", "Verbose", false, "Log extra detail at Debug level. Keep off in normal play.");
 
             Harmony = new Harmony(PluginGuid);

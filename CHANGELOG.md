@@ -4,6 +4,16 @@ All notable changes to this mod are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Added
+
+- The outlines fade out over 3 seconds after you release the key, and they keep updating while they fade. The `FadeDelay` setting takes 0 to 60 seconds, and 0 turns the outlines off at once.
+- The `OutlineColor` setting takes a hex color for the outlines while you hold the key and during the fade. The default is white.
+- The `OutlineWidth` setting takes the thickness of the outlines, from 1 to 8.
+
+### Changed
+
+- The outlines are thinner by default: 2, where the game's own outline is 4.6. Set `OutlineWidth` to 4.6 for the old look. The game's hover outline without the key does not change.
+
 ## [1.0.0] - 2026-10-29
 
 ### Added

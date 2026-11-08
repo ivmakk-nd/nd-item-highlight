@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <Reference Include="$(GameManaged)\Mirror.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameManaged)\Unity.RenderPipelines.HighDefinition.Runtime.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameManaged)\Unity.RenderPipelines.Core.Runtime.dll"><Private>false</Private></Reference>
   </ItemGroup>
 
 </Project>

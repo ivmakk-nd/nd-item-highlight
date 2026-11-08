@@ -2,14 +2,16 @@
 
 Hold a key to outline every item you can pick up around you.
 
-Small items are easy to miss in tall grass, in houses, and around wrecks, and the game outlines an item only when you look straight at it. Hold Left Alt and every item you can pick up within 50 m gets the same outline, even behind walls. Release the key and the outlines go away.
+Small items are easy to miss in tall grass, in houses, and around wrecks, and the game outlines an item only when you look straight at it. Hold Left Alt and every item you can pick up within 50 m gets a thin outline, even behind walls. Release the key and the outlines fade out over 3 seconds.
 
 ## Features
 
 - **Through walls**: the outline shows through walls, car bodies, and hills, so you see what is inside a house before you go in.
 - **Your car stays quiet**: items in or on a car you can drive and the parts installed on it get no outline. Items in wrecks and loose car parts do.
 - **Only what you can take**: items in your hands, in your hotbar, or in another player's hands get no outline.
-- **Settings**: change the key and the radius, up to 100 m.
+- **Tap and keep playing**: the fade starts when you release the key, so a short tap is enough. The outlines keep updating while they fade.
+- **Your color and thickness**: set any hex color and how thick the outlines are. They apply only while you hold the key and during the fade. At other times the game's hover outline looks as usual.
+- **Settings**: change the key, the radius (up to 100 m), the color, the thickness, and the fade time (0 to 60 s, 0 turns the outlines off at once).
 
 ## Multiplayer
 
